@@ -33,9 +33,14 @@ global with sharing class scrud{
             
             // Loop every records to create and collect the fields to create
             for (sobject o : os){
-                if (o.get(descField.getName()) != null){
-                    descFields_to_create.add(descField);
-                    break;
+                try {
+                    if (o.get(descField.getName()) != null){
+                        descFields_to_create.add(descField);
+                        break;
+                    } 
+                } catch (SObjectException e){
+                    // The object does not contain this field so go to scan next field.
+                    continue;
                 }
             }
         }
@@ -152,16 +157,22 @@ global with sharing class scrud{
             // Add field if it is updateable.
             for (String key : m.keySet()) {
                 schema.describeFieldResult descField = m.get(key).getDescribe();
-                if (o.get(descField.getName()) != null){
-                    if (strict == true && !descField.isUpdateable()){
-                        sexception e = new sexception();
-                        e.setMessage('Field: ' + descField.getName() + ' is not updateable.');
-                        throw e;
+                try {
+                    if (o.get(descField.getName()) != null){
+                        system.debug('Object contains ' + descField.getname());
+                        if (strict == true && !descField.isUpdateable()){
+                            sexception e = new sexception();
+                            e.setMessage('Field: ' + descField.getName() + ' is not updateable.');
+                            throw e;
+                        }
+                        if (descField.isUpdateable()){
+                            o4u.put(descField.getName(), o.get(descField.getName()));
+                            update_required = true;
+                        }
                     }
-                    if (descField.isUpdateable()){
-                        o4u.put(descField.getName(), o.get(descField.getName()));
-                        update_required = true;
-                    }
+                } catch (SObjectException e){
+                    // The object does not contain this field so go to scan next field.
+                    continue;
                 }
             }
             
@@ -189,17 +200,23 @@ global with sharing class scrud{
         for (String key : m.keySet()) {
             schema.describeFieldResult descField = m.get(key).getDescribe();
             
-            if (o.get(descField.getName()) != null){
-                if (strict == true && (!descField.isCreateable() || !descField.isUpdateable())){
-                    sexception e = new sexception();
-                    e.setMessage('Field: ' + descField.getName() + ' is not upsertable.');
-                    throw e;
+            try {
+                if (o.get(descField.getName()) != null){
+                    if (strict == true && (!descField.isCreateable() || !descField.isUpdateable())){
+                        sexception e = new sexception();
+                        e.setMessage('Field: ' + descField.getName() + ' is not upsertable.');
+                        throw e;
+                    }
+                    if (descField.isCreateable() && descField.isUpdateable()){
+                        // Add field to o4u
+                        o4u.put(descField.getName(), o.get(descField.getName()));
+                    }
                 }
-                if (descField.isCreateable() && descField.isUpdateable()){
-                    // Add field to o4u
-                    o4u.put(descField.getName(), o.get(descField.getName()));
-                }
+            } catch (SObjectException e){
+                // The object does not contain this field so go to scan next field.
+                continue;
             }
+            
         }
         upsert o4u;
     }
