@@ -1,4 +1,4 @@
 scrud
 =====
 
-Wrapper CRUD method library which follows CRUD/FLS enforcement.
+CRUD wrapper library which follows CRUD/FLS enforcement.
