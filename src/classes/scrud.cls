@@ -153,16 +153,16 @@ global with sharing class scrud{
         for (sobject o : os){
             sobject o4u = targetType.newSObject(o.id);
             boolean update_required = false;
-            
+
+            string object_json = JSON.serialize(o);
+            map<string, object> object_map = (map<string, object>)JSON.deserializeUntyped(object_json);
+
             // Add field if it is updateable.
             for (String key : m.keySet()) {
                 schema.describeFieldResult descField = m.get(key).getDescribe();
-                
+
                 // Check if the object has this field
-                string object_json = JSON.serialize(o);
-                map<string, object> object_map = (map<string, object>)JSON.deserializeUntyped(object_json);
-                if (object_map.containsKey(key)){
-                    system.debug('Object contains ' + descField.getname());
+                if (object_map.containsKey(descField.getname())){
                     if (strict == true && !descField.isUpdateable()){
                         sexception e = new sexception();
                         e.setMessage('Field: ' + descField.getName() + ' is not updateable.');
