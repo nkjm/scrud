@@ -157,22 +157,21 @@ global with sharing class scrud{
             // Add field if it is updateable.
             for (String key : m.keySet()) {
                 schema.describeFieldResult descField = m.get(key).getDescribe();
-                try {
-                    if (o.get(descField.getName()) != null){
-                        system.debug('Object contains ' + descField.getname());
-                        if (strict == true && !descField.isUpdateable()){
-                            sexception e = new sexception();
-                            e.setMessage('Field: ' + descField.getName() + ' is not updateable.');
-                            throw e;
-                        }
-                        if (descField.isUpdateable()){
-                            o4u.put(descField.getName(), o.get(descField.getName()));
-                            update_required = true;
-                        }
+                
+                // Check if the object has this field
+                string object_json = JSON.serialize(o);
+                map<string, object> object_map = (map<string, object>)JSON.deserializeUntyped(object_json);
+                if (object_map.containsKey(key)){
+                    system.debug('Object contains ' + descField.getname());
+                    if (strict == true && !descField.isUpdateable()){
+                        sexception e = new sexception();
+                        e.setMessage('Field: ' + descField.getName() + ' is not updateable.');
+                        throw e;
                     }
-                } catch (SObjectException e){
-                    // The object does not contain this field so go to scan next field.
-                    continue;
+                    if (descField.isUpdateable()){
+                        o4u.put(descField.getName(), o.get(descField.getName()));
+                        update_required = true;
+                    }
                 }
             }
             
