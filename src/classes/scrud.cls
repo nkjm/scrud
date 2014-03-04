@@ -236,6 +236,57 @@ global with sharing class scrud{
         }
         delete os;
     }
+
+    global static list<sObject> squery(string soql){
+        List<sObject> records;
+        try {
+            records = Database.query(soql);
+        } catch (QueryException qe) {
+            system.debug('Error ocurred on executing SOQL: ' + soql);
+            throw qe;
+        }
+
+        if (records.size() > 0){
+
+            Schema.SObjectType targetType = records[0].getSObjectType();
+            if (targetType == null) {
+                sexception e = new sexception();
+                e.setMessage('Object not found.');
+                throw e;
+            }
+            
+            Schema.DescribeSObjectResult sobjResult = targetType.getDescribe();
+            
+            // !! Attention to Governor Limit: Up to 100 call
+            map<string, schema.sObjectField> m = sobjResult.fields.getMap();
+
+            string object_json = JSON.serialize(records[0]);
+            map<string, object> object_map = (map<string, object>)JSON.deserializeUntyped(object_json);
+
+            set<string> forbiddenFields = new set<string>();
+            for (String key : m.keySet()) {
+                schema.describeFieldResult descField = m.get(key).getDescribe();
+                // Check if the object has this field
+                if (object_map.containsKey(descField.getname())){
+                    if (!descField.isAccessible()){
+                        // Add field to forbidden set if it is not accessible.
+                        forbiddenFields.add(descField.getname());
+                    }
+                }
+            }
+
+            // Delete field value which is not allowed to access
+            if (forbiddenFields.size() > 0){
+                for (sObject record : records){
+                    for (string forbiddenField : forbiddenFields){
+                        record.put(forbiddenField, null);
+                    }
+                }
+            }
+        }
+
+        return records;
+    }
     
     global static list<sObject> slist(string objName){
         string field_to_read = '';
