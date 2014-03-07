@@ -91,7 +91,7 @@ global with sharing class scrud{
             map<string, schema.sObjectField> m = targetType.getDescribe().fields.getMap();
             
             for (string f : flds){
-                if (!m.get(f).getDescribe().isAccessible()){
+                if (!m.get(f.trim()).getDescribe().isAccessible()){
                     continue;
                 }
                 field_to_read += f + ',';
@@ -349,7 +349,7 @@ global with sharing class scrud{
         map<string, schema.sObjectField> m = targetType.getDescribe().fields.getMap();
         
         for (string f : flds){
-            if (m.get(f) == null){
+            if (m.get(f.trim()) == null){
                 sexception e = new sexception();
                 e.setMessage('Field: ' + f + ' not found.');
                 throw e;
@@ -378,7 +378,7 @@ global with sharing class scrud{
         map<string, schema.sObjectField> m = targetType.getDescribe().fields.getMap();
         
         for (string f : flds){
-            if (m.get(f) == null){
+            if (m.get(f.trim()) == null){
                 sexception e = new sexception();
                 e.setMessage('Field: ' + f + ' not found.');
                 throw e;
